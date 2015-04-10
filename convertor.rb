@@ -1,9 +1,10 @@
+#!/usr/bin/env ruby
+
 # https://github.com/caseyhoward/nokogiri-plist
 require 'nokogiri-plist'
 
 # /apps/gnome-terminal/profiles/Default
 #  -> background_color
-#  -> bold_color
 #  -> foreground_color
 #  -> palette
 
@@ -11,8 +12,8 @@ def convert_to_key(real_color)
 	return "%02X" % (real_color * 255)
 end
 
-def gconf2_command(gconf_key, gconf_type, gconf_value)
-	return "gconftool-2 --set /apps/gnome-terminal/profiles/Default/#{gconf_key} --type #{gconf_type} \"#{gconf_value}\""
+def gconf2_command(gconf_key, gconf_value)
+	return "gconftool-2 -s -t string /apps/guake/style/#{gconf_key} \"#{gconf_value}\""
 end
 
 def get_rgb(doc_hash)
@@ -20,7 +21,7 @@ def get_rgb(doc_hash)
 	green = convert_to_key(doc_hash["Green Component"])
 	blue  = convert_to_key(doc_hash["Blue Component"])
 
-	return "##{red}#{green}#{blue}"
+	return "##{red}#{red}#{green}#{green}#{blue}#{blue}"
 end
 
 ARGV.each do |iterm_theme|
@@ -47,17 +48,9 @@ ARGV.each do |iterm_theme|
 			hex   = get_rgb(doc[doc_key])
 			keys_to_export["foreground_color"] = hex
 		end
-
-		if doc_key =~ /Bold Color/
-			# This goes directly to bold color
-			hex   = get_rgb(doc[doc_key])
-			keys_to_export["bold_color"] = hex
-		end
 	end
 
-	puts "# " + iterm_theme
-	puts gconf2_command("foreground_color", "string", keys_to_export["foreground_color"])
-	puts gconf2_command("background_color", "string", keys_to_export["background_color"])
-	puts gconf2_command("bold_color", "string", keys_to_export["bold_color"])
-	puts gconf2_command("palette", "string", keys_to_export["palette"].join(':'))
+	puts gconf2_command("font/color", keys_to_export["foreground_color"])
+	puts gconf2_command("background/color", keys_to_export["background_color"])
+	puts gconf2_command("font/palette", keys_to_export["palette"].join(':'))
 end
